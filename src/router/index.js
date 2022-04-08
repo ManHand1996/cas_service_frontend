@@ -3,14 +3,14 @@ import {createRouter,createWebHistory} from "vue-router";
 import LoginPage from "@/components/user/LoginPage";
 import VervifyPage from "@/components/user/VervifyPage";
 import RegisterPage from "@/components/user/RegisterPage";
-import IndexPage from "@/components/IndexPage";
+// import IndexPage from "@/components/IndexPage";
 const routes = [
-    {
-        path: '/',
-        name: 'index',
-        component: IndexPage,
-        meta: {auth: true}
-    },
+    // {
+    //     path: '/',
+    //     name: 'index',
+    //     component: IndexPage,
+    //     meta: {auth: true}
+    // },
     {
         path: '/login',
         name: 'login',
