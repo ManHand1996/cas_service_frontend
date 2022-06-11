@@ -1,26 +1,89 @@
-import {httpGet, httpPost} from '@/httpservic/http'
+import {httpRequest} from '@/httpservic/http'
+import {extractUrlParams} from "@/utils/common";
+import router from "@/router";
 
 
-function userLoginWithEmail(email, password, csrf){
+function userLoginWithEmail(email, password){
     
-    var url = '/cas/login/?' + window.location.href.split('?')[1];
-    
-    return httpPost(url,{
-        email: email,
-        password: password
-    },{headers:{'X-CSRFToken': csrf}}).then(function (response){
-        return response;
+    var url = '/api/cas/login';
+    var param = extractUrlParams(window.location.href.split('?')[1])
+    httpRequest({
+        data:{
+            email: email,
+            password: password
+        },
+        params: param,
+        method:'post',
+        url : url,
+    },).then(function (response){
+        console.log('userloginwithemail:', response);
     }).catch(error => {
         console.log(error.response.headers);
-        let loc = error.response.headers['location'];
-        let redirect = error.response.headers['redirect'] || '';
+        console.log(error.toJSON());
+        if(error.response){
+            let loc = error.response.headers['location'];
+            let redirect = error.response.headers['redirect'] || '';
     
-        if (loc !== '' && error.response.status === 401 && redirect !== '' ) {
-            window.location.href = loc;
+            if (loc !== '' && error.response.status === 401 && redirect !== '' ) {
+                console.log(loc);
+                window.location.href = loc;
+            }
+            else{
+                console.log(error.response);
+            }
         }
         else{
-            return error.response;
+            console.log(error);
         }
+        
+    })
+    // return result;
+    
+    
+}
+
+
+
+function adminLoginWithEmail(email, password){
+    // 登陆前向服务器请求 CSRFToken
+    var url = '/api/admin/login/';
+    
+    return httpRequest({
+        data:{
+            email: email,
+            password: password
+        },
+        method: 'post',
+        url:url
+        
+    }).then(function (response){
+        return response;
+    }).catch(error => {
+        // console.log(error.response.headers);
+        // console.log(error.toJSON());
+        if(error.response){
+            let loc = error.response.headers['location'];
+            let redirect = error.response.headers['redirect'] || '';
+            
+            if (loc !== '' && error.response.status === 401 && redirect !== '' ) {
+                httpRequest({
+                    url: loc,
+                    method: 'get'
+                }).then(rep => {
+                    console.log('redirect loc:request',rep);
+                }).catch(error => {
+                    console.log('redirect loc:request',error.response);
+                })
+                window.location.href = loc;
+            }
+            else{
+                return error.response;
+            }
+        }
+        else{
+            console.log(error);
+        }
+        
     })
     // return result;
     
@@ -29,10 +92,14 @@ function userLoginWithEmail(email, password, csrf){
 
 function userRegister(username, email, password){
     
-    return httpPost('/api/register/',{
-        email: email,
-        password: password,
-        username: username,
+    return httpRequest({
+        url: '/api/cas/register/',
+        method: 'post',
+        data: {
+            email: email,
+            password: password,
+            username: username,
+        }
     },{}).then( rep => {
         
         return rep;
@@ -40,13 +107,42 @@ function userRegister(username, email, password){
 }
 
 function userLogOut(){
-    localStorage.removeItem('jwt');
+    // localStorage.removeItem('jwt');
+    var url = '/api/admin/logout/';
+    
+    httpRequest({
+        url:url,
+        method: 'get'
+    }).then(function (response){
+        return response;
+    }).catch(error => {
+        // console.log(error.response.headers);
+        // console.log(error.toJSON());
+        if(error.response){
+            let loc = error.response.headers['location'];
+            let redirect = error.response.headers['redirect'] || '';
+            
+            if (loc !== '' && error.response.status === 401 && redirect !== '' ) {
+                window.location.href = loc;
+            }
+            else{
+                return error.response;
+            }
+        }
+        else{
+            console.log(error);
+        }
+        
+    })
+    router.push({name:'admin-login'})
     
 }
 
 function userVerify(params){
-    return httpGet('/api/verify/',{
-        params:params
+    return httpRequest({
+        params: params,
+        url: '/api/cas/user/{userid}/verify/',
+        method: 'get`'
     },{}).then( rep => {
         
         return rep;
@@ -55,9 +151,11 @@ function userVerify(params){
 
 function getCSRFToken(){
     
-    return httpGet('/api/common/CSRFToken/',{
-    },{}).then( rep => {
-
+    return httpRequest({
+        url: '/api/CSRFToken/',
+        method: 'get'
+    }).then( rep => {
+         
          return rep.data;
     });
 }
@@ -69,5 +167,7 @@ export {
     userLogOut,
     userRegister,
     userVerify,
-    getCSRFToken
+    getCSRFToken,
+    adminLoginWithEmail,
+    
 }

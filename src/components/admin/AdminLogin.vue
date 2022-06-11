@@ -1,26 +1,28 @@
 <template>
-    <el-row class="row-center">
+
+    <el-row class="row-center">]
+        <foo_comp></foo_comp>
         <el-col :xs="{span:22,offset:1}" :sm="{span:12, offset:6}" :md="{span:10, offset:7 }" :lg="{span:6, offset:9}" >
 
             <el-form
-                    :model="loginForm"
+                    :model="AdminloginForm"
                     :rules="rules"
-                    ref="loginForm"
+                    ref="AdminloginForm"
                     label-width="100px"
-                    class="loginForm box-shadow"
+                    class="AdminloginForm box-shadow"
             >
-                <p>CAS登陆</p>
+                <p>管理后台登陆</p>
                 <hr/>
 <!--                <el-form-item >-->
 <!--                    <el-input name="csrfmiddlewaretoken"-->
-<!--                            type="hidden"-->
-<!--                            v-model="loginForm.csrf"-->
-<!--                            autocomplete="off"-->
+<!--                              type="hidden"-->
+<!--                              v-model="AdminloginForm.csrf"-->
+<!--                              autocomplete="off"-->
 <!--                    ></el-input>-->
 <!--                </el-form-item>-->
 
                 <el-form-item label="邮箱" prop="email">
-                    <el-input v-model="loginForm.email" type="email">
+                    <el-input v-model="AdminloginForm.email" type="email">
 
                     </el-input>
 
@@ -28,14 +30,15 @@
                 <el-form-item label="密码" prop="pass">
                     <el-input
                             type="password"
-                            v-model="loginForm.pass"
+                            v-model="AdminloginForm.pass"
                             autocomplete="off"
                     ></el-input>
                 </el-form-item>
 
                 <el-form-item>
-                    <el-button type="primary" @click="submitForm('loginForm')">登陆</el-button>
-                    <el-button @click="toregsiter()">注册</el-button>
+                    <el-button type="primary" @click="submitForm('AdminloginForm')">登陆</el-button>
+<!--                    <el-button @click="testClick()"></el-button>-->
+                    <el-button @click="toregsiter()">忘记密码</el-button>
                 </el-form-item>
             </el-form>
         </el-col>
@@ -44,50 +47,29 @@
 </template>
 
 <script>
-import {userLoginWithEmail, getCSRFToken} from '@/interfaces/user'
-
+import {adminLoginWithEmail, getCSRFToken} from '@/interfaces/user'
 import router from "@/router";
-
+import foo_comp from "@/components/foo_comp";
+import {validatePass, checkEmail} from "@/utils/formValidator"
+import store from "@/store";
+import {setLocalStorege} from "@/utils/common";
 
 // import {getAESKey, encryptAES, decryptAES,} from "@/interfaces/encry";
 
 export default {
     name: 'LoginPage',
+    components: {foo_comp},
     data() {
-        window.onload = () =>{getCSRFToken().then(rep => {
 
-            this.loginForm.csrf = rep;
-            // this.cookie.set('csrf_token', rep);
-        })}
 
-        let checkEmail = (rule, value, callback) => {
-            // 正则表达式验证
-            const reg =  /^[A-Za-z\d]+([-_.][A-Za-z\d]+)*@([A-Za-z\d]+[-.])+[A-Za-z\d]{2,4}$/;
-            if (value === '' || value === undefined || value === null) {
-                return callback(new Error('登陆邮箱不能为空'));
-            } else {
-                if (!reg.test(value)) {
-                    return callback(new Error('请输入正确的邮箱地址'));
-                } else {
-                    return callback();
-                }
-            }
-        }
+        window.onload = this.setCSRFToken;
 
-        let validatePass = (rule, value, callback) => {
-            if (value === '') {
-                return callback(new Error('请输入密码'))
-            } else {
-
-                return callback()
-            }
-        }
 
         return {
-            loginForm: {
+            AdminloginForm: {
                 pass: '',
                 email: '',
-                csrf: 'rqr'
+                csrf: ''
             },
             rules: {
                 pass: [{ validator: validatePass, trigger: 'blur' }],
@@ -96,19 +78,40 @@ export default {
         }
     },
     methods: {
+        setCSRFToken(){
+            getCSRFToken().then(rep => {
 
-        testClick(){
-
-
-        },
+            this.AdminloginForm.csrf = rep.data;
+            // this.cookie.set('csrf_token', rep);
+            // clean cookie
+            // this.$cookies.remove('csrftoken');
+        })},
 
         submitForm(formName) {
             this.$refs[formName].validate((valid) => {
                 if (valid) {
-                    console.log(valid);
                     // 提交数据到API.login
                     // 跳转到首页
-                    userLoginWithEmail(this.loginForm.email, this.loginForm.pass)
+                    setLocalStorege('isLogin', true);
+                    adminLoginWithEmail(this.AdminloginForm.email, this.AdminloginForm.pass).then(rep => {
+                        if (rep.data.errcode !== 0 ){
+
+                            this.$alert(rep.data.errmsg, '提示',{
+                                confirmButtonText: '确认',
+                                center: true,
+
+                            });
+                            this.setCSRFToken();
+
+                        }
+                        else{
+                            // json token
+                            store.commit('set_state', {'toLocal':true, 'isLogin':true, 'key': 'isLogin'});
+                            router.push({name:'index'});
+                        }
+
+
+                    })
 
 
 
@@ -145,7 +148,7 @@ hr{
     height: 1px;
     margin-bottom: 10px;
 }
-.loginForm{
+.AdminloginForm{
     padding:5px 20px 20px 20px;
 
     box-shadow: 0 2px 4px rgba(0,0,0,0.12),0 0 6px rgba(0,0,0,0.04);

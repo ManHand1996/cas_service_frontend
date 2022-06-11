@@ -1,0 +1,15 @@
+/deep/ .el-table /deep/ th{
+    padding: 0 ;
+
+}
+
+/deep/ .el-table /deep/ td{
+    padding: 0 ;
+
+}
+
+i{
+    font-size: 1.2rem;
+    color:whitesmoke;
+    margin-right: 5px;
+}

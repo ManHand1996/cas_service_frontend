@@ -1,32 +1,20 @@
 
 import {JSEncrypt} from "jsencrypt/lib/JSEncrypt"; // rsa
-import {httpGet} from "@/httpservic/http";
 // import {Base64} from "jsencrypt/lib/lib/asn1js/base64";
 
 const CryptoJS = require("crypto-js");
 
-async function  getServerRSAPK(){
-    // 获取服务端公钥
-    await httpGet('/api/common/rsa_pk/',{
-    }).then(rep => {
-        // console.log('rsapk:',rep.data);
-        localStorage.setItem('server_pk', rep.data);
-    })
-}
 
 // SHA256
 function encryptDataRSA(data){
 
     
     let pk = localStorage.getItem('server_pk');
-    console.log('pk: ', pk)
     let encrypt_data = '';
     let crypt = new JSEncrypt();
 
     crypt.setPublicKey(pk);
     encrypt_data = crypt.encrypt(data)
-
-    console.log('encrypt: ', encrypt_data)
     return encrypt_data
 }
 
@@ -44,11 +32,13 @@ function getAESKey(){
 function decryptAES(key, iv, data){
     /*
     * decrypt AES key
+    * :params data: base64 format encrypt data
     * return: string
     * */
     //let encryptedArray = CryptoJS.enc.Base64.parse(data); // type: WordArray
-    let encryptedArray = data; // type: WordArray
-
+    let decode_base64= CryptoJS.enc.Base64.parse(data)
+    let encryptedArray = CryptoJS.enc.Utf8.stringify(decode_base64); // type: WordArray
+    
     // let srcs = CryptoJS.enc.Base64.stringify(encryptedHexStr);
     let decrypt_data = CryptoJS.AES.decrypt(encryptedArray,  CryptoJS.enc.Utf8.parse(key), {
         iv: CryptoJS.enc.Utf8.parse(iv),
@@ -61,7 +51,6 @@ function decryptAES(key, iv, data){
 }
 
 function encryptAES(key, iv ,data, is_json = false){
-    console.log(key);
     /*
     * return: base64 encode string
     * */
@@ -77,84 +66,11 @@ function encryptAES(key, iv ,data, is_json = false){
         mode: CryptoJS.mode.CBC,
         padding: CryptoJS.pad.Pkcs7,
         });
-   return encrypt_data.toString();
+    // base64 不能用于aes,原因与python的aes解码有出入
+    // let encode_utf8 = CryptoJS.enc.Utf8.parse(encrypt_data.toString());
+    // return CryptoJS.enc.Base64.stringify(encode_utf8);
+    return encrypt_data.toString(); // utf8
 }
-
-window.onload = function (){
-    // let i_key = getAESKey()
-    // let i_iv = i_key.split('').reverse().join('');
-    // let data = '2524242sagasga'
-    //
-    // const CryptoJS = require('crypto-js');  //引用AES源码js
-    //
-    // const key = CryptoJS.enc.Utf8.parse(i_key);  //十六位十六进制数作为密钥
-    // const iv = CryptoJS.enc.Utf8.parse(i_iv);   //十六位十六进制数作为密钥偏移量
-    //
-    // //解密方法
-    // function Decrypt(word) {
-    //     let encryptedHexStr = CryptoJS.enc.Hex.parse(word);
-    //     let srcs = CryptoJS.enc.Base64.stringify(encryptedHexStr);
-    //     let decrypt = CryptoJS.AES.decrypt(srcs, key, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
-    //     let decryptedStr = decrypt.toString(CryptoJS.enc.Utf8);
-    //     return decryptedStr.toString();
-    // }
-    //
-    // //加密方法
-    // function Encrypt(word) {
-    //     let srcs = CryptoJS.enc.Utf8.parse(word);
-    //     let encrypted = CryptoJS.AES.encrypt(srcs, key, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
-    //     return encrypted.ciphertext.toString().toUpperCase();
-    // }
-    // let encrypt_data = Encrypt(data);
-    // console.log(encrypt_data);
-    // let decrypt_data = Decrypt(encrypt_data);
-    // //
-    // console.log(decrypt_data);
-    //
-    
-    let i_key = 'TNTPR8ZzTJhN66BLPJUzzasoFAyQVAtQ'
-    let i_iv = i_key.slice(0,15);
-    let data = 'f03964cc9256e4a86245048bbea69f172552429a09af0f7b5ffdbc1903316bd9'
-    data = 'helloworld';
-    // const CryptoJS = require('crypto-js');  //引用AES源码js
-
-    //const key = CryptoJS.enc.Utf8.parse(i_key);  //十六位十六进制数作为密钥
-    //const iv = CryptoJS.enc.Utf8.parse(i_iv);   //十六位十六进制数作为密钥偏移量
-
-    let encrypt_data = encryptAES(i_key, i_iv, data);
-    console.log(encrypt_data);
-    let decrypt_data = decryptAES(i_key, i_iv, encrypt_data);
-    //
-
-    console.log(decrypt_data);
-    
-    
-    // test
-    // let i_key = 'TNTPR8ZzTJhN66BL'
-    // let i_iv ='PJUzzasoFAyQVAtQ';
-    // // i_key = i_key.slice(16,31);
-    // //const key = CryptoJS.enc.Utf8.parse(i_key);  //十六位十六进制数作为密钥
-    // //const iv = CryptoJS.enc.Utf8.parse(i_iv);   //十六位十六进制数作为密钥偏移量
-    //
-    //
-    // var json_data = {email:"214124@qq.com",nonce:"A0pZiOBB13",password:"YYXMUsJughE4IrSTVphmIQ==",t:1647227515};
-    // var json_str = JSON.stringify(json_data, null, ' ').replace('\n ','')
-    //     .replaceAll('\n', '');
-    // console.log('json_str:', json_str)
-    // var hash_str = hash_string(json_str);
-    // console.log('hash_str:', hash_str);
-    //
-    // let encrypt_data = encryptAES(i_key, i_iv, '214124@qq.com');
-    // console.log('encrypt hashstr: ',encrypt_data);
-    // let decrypt_data = decryptAES(i_key, i_iv, encrypt_data);
-    //  console.log('de:',decrypt_data)
-    //
-    // console.log('base64:', )
-    
-    
-}
-
-
 
 function random(len){
     /*
@@ -180,21 +96,18 @@ function hash_string(data, is_json=false){
     * */
     let hash;
     if (is_json){
-        
-        data = JSON.stringify(data);
-        
+        // 将json数据转换为字符串进行摘要，去掉多余的字符串
+        data = JSON.stringify(data, null, ' ').replace('\n ','')
+            .replaceAll('\n', '')
+        console.log(data)
     }
-    
     hash = CryptoJS.SHA256(data)
-    console.log('hash hex:', hash.toString())
+    
+    console.log(hash.toString(CryptoJS.enc.Base64))
     return hash.toString(CryptoJS.enc.Base64);
     
 }
 
-// window.onload = function (){
-//     var s = hash_string('hello')
-//     console.log('hash_string:', s);
-// }
 
 function sorted(data, reverse=false){
 
@@ -216,8 +129,11 @@ function sorted(data, reverse=false){
     
 
     for(let i in arr_key){
-
-        new_json[arr_key[i]] = data[arr_key[i]];
+        let val = data[arr_key[i]];
+        if(!isNaN(data[arr_key[i]])){
+            val = String(data[arr_key[i]]);
+        }
+        new_json[arr_key[i]] = val;
         
     }
     return new_json;
@@ -228,7 +144,7 @@ function sorted(data, reverse=false){
 
 
 export {
-    getServerRSAPK,
+
     encryptDataRSA,
     getAESKey,
     decryptAES,
